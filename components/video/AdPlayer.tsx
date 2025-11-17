@@ -9,30 +9,31 @@ import { AdPlayerHeader } from './AdPlayerHeader';
 import { VideoPlaylist, PlaylistItem } from './VideoPlaylist';
 import { getCloudinaryVideoUrl } from '@/lib/cloudinary';
 
-const mainId = process.env.NEXT_PUBLIC_MAIN_VIDEO_ID ?? '';
-const adId = process.env.NEXT_PUBLIC_AD_VIDEO_ID ?? '';
+// Main content videos in Cloudinary
+const contentPlaylist: PlaylistItem[] = [
+  {
+    id: 'video-1',
+    title: 'Main video 1',
+    src: getCloudinaryVideoUrl('videos/main/my-main-video'),
+  },
+  {
+    id: 'video-2',
+    title: 'Main video 2',
+    src: getCloudinaryVideoUrl('videos/main/my-main-video2'),
+  },
+  {
+    id: 'video-3',
+    title: 'Main video 3',
+    src: getCloudinaryVideoUrl('videos/main/my-main-video3'),
+  },
+];
 
-const mainUrlEnv = process.env.NEXT_PUBLIC_MAIN_VIDEO_URL ?? '';
-const adUrlEnv = process.env.NEXT_PUBLIC_AD_VIDEO_URL ?? '';
-
-const baseMainSrc = mainUrlEnv || getCloudinaryVideoUrl(mainId);
-const adSrc = adUrlEnv || getCloudinaryVideoUrl(adId);
-
-// Simple demo playlist, you can replace src values with other Cloudinary URLs
-const contentPlaylist: PlaylistItem[] = baseMainSrc
-  ? [
-      {
-        id: 'video-1',
-        title: 'Main video 1',
-        src: baseMainSrc,
-      },
-      {
-        id: 'video-2',
-        title: 'Main video 2',
-        src: baseMainSrc,
-      },
-    ]
-  : [];
+// Ad videos in Cloudinary, will rotate
+const adList: string[] = [
+  getCloudinaryVideoUrl('videos/ads/my-ad'),
+  getCloudinaryVideoUrl('videos/ads/my-ad2'),
+  getCloudinaryVideoUrl('videos/ads/my-ad3'),
+];
 
 export function AdPlayer() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -43,21 +44,24 @@ export function AdPlayer() {
   const [resumeTime, setResumeTime] = useState(0);
   const [adStartTime, setAdStartTime] = useState(10);
   const [adUrl, setAdUrl] = useState('https://cloudinary.com/');
+  const [adIndex, setAdIndex] = useState(0);
 
   const currentItem = contentPlaylist[currentIndex];
   const currentMainSrc = currentItem?.src ?? '';
 
+  const currentAdSrc = adList[adIndex] || '';
+
   useEffect(() => {
     console.log('currentMainSrc:', currentMainSrc);
-    console.log('adSrc:', adSrc);
-  }, [currentMainSrc]);
+    console.log('currentAdSrc:', currentAdSrc);
+  }, [currentMainSrc, currentAdSrc]);
 
   // Swap source when we enter or leave ad mode or change video
   useEffect(() => {
     const currentVideo = videoRef.current;
     if (!currentVideo) return;
 
-    const src = isPlayingAd ? adSrc : currentMainSrc;
+    const src = isPlayingAd ? currentAdSrc : currentMainSrc;
     if (!src) {
       console.warn('Missing src for mode', { isPlayingAd, currentIndex });
       return;
@@ -71,7 +75,7 @@ export function AdPlayer() {
     currentVideo.play().catch(() => {
       // Autoplay might be blocked
     });
-  }, [isPlayingAd, resumeTime, currentIndex, currentMainSrc]);
+  }, [isPlayingAd, resumeTime, currentIndex, currentMainSrc, currentAdSrc]);
 
   // Time and ended events
   useEffect(() => {
@@ -93,10 +97,14 @@ export function AdPlayer() {
     }
 
     function handleEnded() {
-      // If ad finished, go back to content at same index
+      // If ad finished, rotate ad and return to main
       if (isPlayingAd) {
         console.log('Ad ended, return to main');
         setIsPlayingAd(false);
+        setAdIndex((prev) => {
+          if (!adList.length) return prev;
+          return (prev + 1) % adList.length;
+        });
         return;
       }
 
@@ -214,14 +222,14 @@ export function AdPlayer() {
           </p>
           <p>
             Ad src:{' '}
-            {adSrc ? (
+            {currentAdSrc ? (
               <a
-                href={adSrc}
+                href={currentAdSrc}
                 target='_blank'
                 rel='noreferrer'
                 className='text-sky-500 underline'
               >
-                {adSrc}
+                {currentAdSrc}
               </a>
             ) : (
               'missing'
