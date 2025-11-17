@@ -1,10 +1,27 @@
 import { Button } from '@/components/ui/button';
 
-export function ControlsBar() {
+type ControlsBarProps = {
+  onPlay: () => void;
+  onSkipAd: () => void;
+  isPlayingAd: boolean;
+};
+
+export function ControlsBar({
+  onPlay,
+  onSkipAd,
+  isPlayingAd,
+}: ControlsBarProps) {
   return (
     <div className='flex gap-2'>
-      <Button size='sm'>Play</Button>
-      <Button size='sm' variant='outline'>
+      <Button size='sm' onClick={onPlay}>
+        Play
+      </Button>
+      <Button
+        size='sm'
+        variant='outline'
+        onClick={onSkipAd}
+        disabled={!isPlayingAd}
+      >
         Skip ad
       </Button>
     </div>
